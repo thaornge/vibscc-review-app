@@ -1,0 +1,25 @@
+﻿record_id,run_id,model_slot,model_id,model_version,prompt_version,guideline_version,predicted_eligibility,predicted_C,predicted_S,predicted_A,uncertain,uncertainty_reason,evidence,parse_status,constraint_valid
+APP_MOCK_001,LLM_MOCK_RUN_01,1,MOCK_LLM_1,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C0,S0,A0,false,,đẹp quá,VALID,true
+APP_MOCK_001,LLM_MOCK_RUN_01,2,MOCK_LLM_2,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C0,S0,A0,false,,đẹp quá,VALID,true
+APP_MOCK_002,LLM_MOCK_RUN_01,1,MOCK_LLM_1,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C2,S0,A1,false,,béo như heo,VALID,true
+APP_MOCK_002,LLM_MOCK_RUN_01,2,MOCK_LLM_2,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C2,S0,A1,false,,béo như heo,VALID,true
+APP_MOCK_003,LLM_MOCK_RUN_01,1,MOCK_LLM_1,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C1,S3,A6,false,,gọi là đẹp hả,VALID,true
+APP_MOCK_003,LLM_MOCK_RUN_01,2,MOCK_LLM_2,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C2,S0,A6,false,,đẹp hả,VALID,true
+APP_MOCK_004,LLM_MOCK_RUN_01,1,MOCK_LLM_1,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C2,S0,A3,false,,mặt mụn,VALID,true
+APP_MOCK_004,LLM_MOCK_RUN_01,2,MOCK_LLM_2,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C2,S0,A3,false,,mặt mụn,VALID,true
+APP_MOCK_005,LLM_MOCK_RUN_01,1,MOCK_LLM_1,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C1,S4,A6,true,SLANG_UNKNOWN,hệ tâm linh,VALID,true
+APP_MOCK_005,LLM_MOCK_RUN_01,2,MOCK_LLM_2,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C1,S4,A6,false,,hệ tâm linh,VALID,true
+APP_MOCK_006,LLM_MOCK_RUN_01,1,MOCK_LLM_1,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C0,S0,A0,false,,ghê quá,VALID,true
+APP_MOCK_006,LLM_MOCK_RUN_01,2,MOCK_LLM_2,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C0,S0,A0,false,,ghê quá,VALID,true
+APP_MOCK_007,LLM_MOCK_RUN_01,1,MOCK_LLM_1,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C1,S5,A6,false,,🤡,VALID,true
+APP_MOCK_007,LLM_MOCK_RUN_01,2,MOCK_LLM_2,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C1,S1,A6,false,,Đẹp quá,VALID,true
+APP_MOCK_008,LLM_MOCK_RUN_01,1,MOCK_LLM_1,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C2,S0,A4,false,,Tóc như ổ quạ,VALID,true
+APP_MOCK_008,LLM_MOCK_RUN_01,2,MOCK_LLM_2,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,,,,false,,,INVALID_JSON,false
+APP_MOCK_009,LLM_MOCK_RUN_01,1,MOCK_LLM_1,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C0,S0,A0,false,,Mlem,VALID,true
+APP_MOCK_009,LLM_MOCK_RUN_01,2,MOCK_LLM_2,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C0,S0,A0,false,,Mlem,VALID,true
+APP_MOCK_010,LLM_MOCK_RUN_01,1,MOCK_LLM_1,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C2,S0,A7,false,,"mụn, béo",VALID,true
+APP_MOCK_010,LLM_MOCK_RUN_01,2,MOCK_LLM_2,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C2,S0,A2,false,,mụn,VALID,true
+APP_MOCK_011,LLM_MOCK_RUN_01,1,MOCK_LLM_1,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C1,S2,A1,false,,linh vật,VALID,true
+APP_MOCK_011,LLM_MOCK_RUN_01,2,MOCK_LLM_2,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C1,S2,A1,false,,linh vật,VALID,true
+APP_MOCK_012,LLM_MOCK_RUN_01,1,MOCK_LLM_1,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C2,S1,A3,false,,răng hô,VALID,false
+APP_MOCK_012,LLM_MOCK_RUN_01,2,MOCK_LLM_2,mock-1,prompt-mock-v1,GUIDELINE_FROZEN_MOCK_v1,KEEP,C2,S0,A3,false,,răng hô,VALID,true

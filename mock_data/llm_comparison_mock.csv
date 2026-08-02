@@ -1,0 +1,13 @@
+﻿record_id,comparison_status,llm_consensus,consensus_eligibility,consensus_C,consensus_S,consensus_A,disagreement_axes,any_uncertain,any_invalid
+APP_MOCK_001,EXACT,true,KEEP,C0,S0,A0,,false,false
+APP_MOCK_002,EXACT,true,KEEP,C2,S0,A1,,false,false
+APP_MOCK_003,DISAGREE,false,,,,,"C,S",false,false
+APP_MOCK_004,EXACT,true,KEEP,C2,S0,A3,,false,false
+APP_MOCK_005,EXACT,true,KEEP,C1,S4,A6,,true,false
+APP_MOCK_006,EXACT,true,KEEP,C0,S0,A0,,false,false
+APP_MOCK_007,DISAGREE,false,,,,,S,false,false
+APP_MOCK_008,ERROR,false,,,,,PARSE,false,true
+APP_MOCK_009,EXACT,true,KEEP,C0,S0,A0,,false,false
+APP_MOCK_010,DISAGREE,false,,,,,A,false,false
+APP_MOCK_011,EXACT,true,KEEP,C1,S2,A1,,false,false
+APP_MOCK_012,ERROR,false,,,,,CONSTRAINT,false,true
