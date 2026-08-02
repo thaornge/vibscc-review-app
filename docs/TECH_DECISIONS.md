@@ -1,46 +1,52 @@
-# Technical Decisions — Checkpoint 1
+# Technical Decisions
 
-## Trạng thái
+## Ownership Boundary
 
-`DECIDED_FOR_MOCK_INTEGRATION`, ngày 02/08/2026. Các quyết định ảnh hưởng persistence production cần Ngọc triển khai đúng contract hoặc đề xuất thay đổi trước Checkpoint 3.
+The UI layer owns Streamlit pages, layout, and mapping between UI form keys and repository payloads.
 
-## Quyết định
+Backend/data ownership stays in:
 
-1. Stack mục tiêu giữ nguyên: Streamlit + Supabase PostgreSQL/Auth + private GitHub repository.
-2. Checkpoint 2 của Nga dùng `FakeRepository` lưu JSON để UI chạy độc lập, nhưng mọi service chỉ phụ thuộc `Repository` protocol.
-3. Repository contract gồm snapshot read và serializable atomic update. Supabase adapter có thể dùng transaction/RPC thay vì tải toàn store; behavior phải tương đương.
-4. `record_id` là immutable pipeline key; `case_id` và `assignment_id` là internal stable IDs.
-5. Route được quyết định trước khi assignment; reviewer không được chọn hoặc đổi route.
-6. `SINGLE_VISIBLE_REVIEW` có 1 reviewer và chỉ mở exact two-model consensus. Các double route có 2 reviewer khác nhau và visibility `BLIND`.
-7. Draft được phép chưa hoàn chỉnh; submit phải validate toàn bộ C/S/A và khóa initial annotation.
-8. Mọi mutable assignment có `row_version`; update sai version bị từ chối để chặn lost update/concurrent overwrite.
-9. Discussion chỉ mở sau hai initial submissions khác tuple; proposal cần reviewer còn lại confirm. Reject chuyển `ADJUDICATION_REQUIRED`.
-10. Mock authentication dùng account selector để test workflow. Production phải dùng Supabase Auth với account pre-created và public signup disabled.
-11. UI dùng một Streamlit entrypoint và screen navigation thay vì thư mục multipage. Quyết định này giảm session/state duplication nhưng không thay đổi behavior contract.
-12. Dữ liệu Day 1–2 được giữ trong `day1_day2_nga/`, tách khỏi app để không trộn dependency và output.
+- `src/models.py`
+- `src/repository_base.py`
+- `src/repository_supabase.py`
+- `scripts/`
 
-## Interface UI ↔ persistence đã chốt
+If a UI workflow needs a new query or a changed persistence behavior, document the missing repository method or field and ask the backend owner to implement it.
 
-```python
-class Repository(Protocol):
-    def snapshot(self) -> dict: ...
-    def atomic_update(self, operation): ...
-    def reset(self) -> None: ...
+## Repository Use
+
+The app uses `SupabaseRepository()` from `src.repository_supabase`.
+
+Current UI calls:
+
+- `get_assigned_cases_for_user`
+- `save_draft`
+- `submit_annotation`
+- `get_discussion_cases`
+- `submit_proposal`
+- `resolve_discussion`
+- `get_adjudication_cases`
+- `submit_adjudication`
+
+The UI does not run import/export scripts.
+
+## Environment
+
+Supabase config is loaded from root `.env`:
+
+```text
+SUPABASE_URL
+SUPABASE_KEY
+SUPABASE_SERVICE_ROLE_KEY
 ```
 
-Ngọc không bắt buộc hiện thực callback API nguyên xi ở production. Adapter/service có thể chuyển thành method cụ thể hoặc PostgreSQL RPC, nhưng phải giữ các guarantee:
+`SUPABASE_SERVICE_ROLE_KEY` is preferred by `SupabaseRepository`; `SUPABASE_KEY` is a fallback.
 
-- read theo stable ID, không theo row order;
-- atomic submit;
-- unique assignment/initial annotation;
-- optimistic concurrency;
-- append-only audit;
-- authorization và blind filtering ở backend/RLS;
-- lỗi giữa transaction không commit một phần.
+## Form Decisions
 
-## Trade-offs
-
-- JSON repository không hỗ trợ multi-machine; nó chỉ là độc lập Checkpoint 2 của Nga.
-- Backend filtering trong mock chứng minh behavior, không thay thế RLS production.
-- Không tự xây importer/exporter Supabase trong phạm vi Nga Checkpoint 2 để tránh ghi đè trách nhiệm của Ngọc.
-
+- C/S/A use compact horizontal radio controls.
+- `S6` is available for `C1`.
+- `remove_reason` uses fixed radio options.
+- `OTHER_REMOVE` requires `Note`.
+- `Uncertainty reason` is disabled until `Uncertain` is checked.
+- Evidence is entered manually.
