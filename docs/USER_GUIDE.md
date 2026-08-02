@@ -2,17 +2,26 @@
 
 ## Reviewer
 
-Choose `ANN_01`–`ANN_04` in the sidebar and open **My Review**.
-
-- Blind case: label independently; no LLM or other reviewer result is shown.
-- Visible case: inspect consensus, choose Accept or Edit.
-- Save Draft keeps work editable; Submit validates and permanently locks the initial annotation.
-- When two blind labels differ, open **Discussion**. One participant proposes a valid tuple; the other confirms or rejects it.
+1. Chọn mock account `ANN_01`–`ANN_04` ở sidebar.
+2. Mở **My Review**, chọn assignment.
+3. Với blind case, chỉ đọc text và điền nhãn; không có LLM/audit/human khác.
+4. Với visible case, xem consensus rồi chọn **ACCEPT** hoặc **EDIT**. Edit phải có note ngắn.
+5. **Save draft** để giữ dữ liệu sau reload. **Submit & lock** để nộp initial annotation; không thể sửa lại.
+6. Khi hai blind reviewers khác nhãn, vào **Discussion**. Một người đề xuất tuple + rationale; người còn lại confirm hoặc reject/escalate.
 
 ## Admin
 
-Choose `ADMIN_PHUC` and open **Adjudication**. Select an escalated case, enter a valid decision and mandatory rationale, then submit.
+1. Chọn `ADMIN_PHUC`.
+2. Vào **Adjudication** để xử lý case đã escalated; tuple và rationale bắt buộc.
+3. Vào **Admin** để xem count hoặc reset toàn bộ synthetic mock.
 
-## Reset
+## Demo nhanh
 
-Return to the home page and use **Reset toàn bộ mock data**. This deletes only generated runtime mock state and restores the committed synthetic seed.
+- `ANN_01` / V001: visible Accept.
+- `ANN_03` / V002: visible Edit.
+- `ANN_03` và `ANN_04` / B002: tạo agreement hoặc disagreement.
+- `ANN_01` / B001: proposal; `ANN_02`: confirm/reject.
+- `ADMIN_PHUC` / T002: adjudication đã seed sẵn.
+
+Không dùng mock login hoặc JSON repository với dữ liệu thật.
+

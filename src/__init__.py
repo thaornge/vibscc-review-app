@@ -1,1 +1,2 @@
-"""ViBSCC human verification application."""
+"""ViBSCC verification app domain package."""
+

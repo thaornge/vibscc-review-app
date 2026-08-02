@@ -1,47 +1,80 @@
 import streamlit as st
+
 from src.app_context import current_user, repository
-from src.constants import FINAL_STATUSES, Route
+from src.review_service import ReviewService
 from src.ui import annotation_form, labels_text
 
-st.set_page_config(page_title="My Review", page_icon="📝")
-repo = repository(); user = current_user(repo)
+
+FINAL_STATUSES = {
+    "RESOLVED_HUMAN_AGREEMENT",
+    "RESOLVED_DISCUSSION",
+    "RESOLVED_ADJUDICATION",
+    "RESOLVED_VISIBLE_ACCEPT",
+    "RESOLVED_VISIBLE_EDIT",
+}
+
+
+st.set_page_config(page_title="My Review", page_icon="MR")
+repo = repository()
+user = current_user(repo)
+service = ReviewService(repo)
+
 st.title("My Review")
 if user["role"] != "REVIEWER":
-    st.warning("Trang này chỉ dành cho REVIEWER."); st.stop()
+    st.warning("Trang nay chi danh cho REVIEWER.")
+    st.stop()
 
-assignments = repo.assignments_for(user["user_id"])
-if not assignments:
-    st.info("Không có assignment."); st.stop()
-selected = st.selectbox("Chọn assignment", assignments, format_func=lambda x: f"{x['record_id']} · {x['route']} · {x['status']}")
-case = repo.case_for_reviewer(selected["case_id"], user["user_id"])
-st.caption(f"{case['record_id']} · {case['guideline_version']} · {case['batch_id']}")
-st.subheader("Nội dung")
-st.write(case["text_annotation"])
+assignments = service.list_assignments(user["user_id"])
+editable = [row for row in assignments if row["assignment_status"] != "SUBMITTED"]
+if not editable:
+    st.info("Khong co assignment chua submit.")
+    st.stop()
 
-if case["route"] == Route.SINGLE_VISIBLE_REVIEW:
-    st.subheader("LLM consensus")
-    st.info(labels_text(case["llm_consensus"]))
-    if case["llm_consensus"].get("evidence"): st.caption(case["llm_consensus"]["evidence"])
-else:
-    st.info("Blind review: hãy tự gán nhãn. Prediction và reviewer khác được bảo vệ cho tới discussion.")
+selected = st.selectbox(
+    "Chon assignment",
+    editable,
+    format_func=lambda row: f"{row['record_id']} - {row['visibility_mode']} - {row['assignment_status']}",
+)
+view = service.reviewer_view(user["user_id"], selected["assignment_id"])
+assignment = view["assignment"]
 
-if selected["status"] in FINAL_STATUSES or case["assignment"]["status"] == "SUBMITTED":
-    st.success("Initial annotation đã submit và bị khóa."); st.stop()
+st.caption(f"{view['record']['record_id']} - {view['record']['guideline_version']} - {view['record']['batch_id']}")
+st.info(view["record"]["text_annotation"])
 
-initial = case["assignment"].get("draft") or (case.get("llm_consensus") if case["route"] == Route.SINGLE_VISIBLE_REVIEW else None)
-labels = annotation_form(f"review_{case['case_id']}", initial)
-if case["route"] == Route.SINGLE_VISIBLE_REVIEW:
-    action = st.radio("Decision", ["ACCEPT", "EDIT"], horizontal=True)
-    if action == "ACCEPT": labels = {**case["llm_consensus"], "guideline_version": case["guideline_version"]}
+defaults = view.get("draft") or {}
+if view["visibility_mode"] == "VISIBLE":
+    consensus = view["llm_consensus"]
+    st.caption(f"LLM consensus: {labels_text(consensus)}")
+    if consensus.get("evidence"):
+        st.caption(consensus["evidence"])
+    action = st.radio("Decision", ["ACCEPT", "EDIT"], horizontal=True, key=f"action_{assignment['assignment_id']}")
+    if action == "ACCEPT":
+        defaults = {**defaults, **consensus}
 else:
     action = "BLIND_LABEL"
+    st.caption("Blind review: predictions and other reviewer labels are hidden.")
 
-c1, c2 = st.columns(2)
-with c1:
+if view["case_status"] in FINAL_STATUSES or assignment["assignment_status"] == "SUBMITTED":
+    st.success("Initial annotation da submit va bi khoa.")
+    st.stop()
+
+labels = annotation_form(f"review_{assignment['assignment_id']}", defaults)
+labels["decision_action"] = action
+
+col1, col2 = st.columns(2)
+with col1:
     if st.button("Save Draft", use_container_width=True):
-        try: repo.save_draft(case["case_id"], user["user_id"], labels); st.success("Đã lưu draft.")
-        except ValueError as exc: st.error(str(exc))
-with c2:
+        try:
+            service.save_draft(user["user_id"], assignment["assignment_id"], labels, assignment["row_version"])
+            st.success("Da luu draft.")
+            st.rerun()
+        except Exception as exc:
+            st.error(str(exc))
+with col2:
     if st.button("Submit", type="primary", use_container_width=True):
-        try: repo.submit(case["case_id"], user["user_id"], labels, action); st.success("Đã submit và khóa initial annotation."); st.rerun()
-        except ValueError as exc: st.error(str(exc))
+        try:
+            status = service.submit(user["user_id"], assignment["assignment_id"], labels, assignment["row_version"])
+            st.success(f"Da submit. Case status: {status}")
+            st.rerun()
+        except Exception as exc:
+            st.error(str(exc))

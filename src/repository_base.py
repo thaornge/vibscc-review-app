@@ -1,25 +1,21 @@
-from abc import ABC, abstractmethod
-from typing import Any
+from __future__ import annotations
+
+from typing import Any, Callable, Protocol, TypeVar
+
+T = TypeVar("T")
 
 
-class ReviewRepository(ABC):
-    @abstractmethod
-    def users(self) -> list[dict[str, Any]]: ...
-    @abstractmethod
-    def assignments_for(self, user_id: str) -> list[dict[str, Any]]: ...
-    @abstractmethod
-    def case_for_reviewer(self, case_id: str, user_id: str) -> dict[str, Any]: ...
-    @abstractmethod
-    def save_draft(self, case_id: str, user_id: str, annotation: dict[str, Any]) -> None: ...
-    @abstractmethod
-    def submit(self, case_id: str, user_id: str, annotation: dict[str, Any], action: str) -> None: ...
-    @abstractmethod
-    def discussion_cases_for(self, user_id: str) -> list[dict[str, Any]]: ...
-    @abstractmethod
-    def propose(self, case_id: str, user_id: str, labels: dict[str, Any], rationale: str) -> None: ...
-    @abstractmethod
-    def respond(self, case_id: str, user_id: str, confirm: bool, rationale: str) -> None: ...
-    @abstractmethod
-    def adjudication_cases(self) -> list[dict[str, Any]]: ...
-    @abstractmethod
-    def adjudicate(self, case_id: str, admin_id: str, labels: dict[str, Any], rationale: str) -> None: ...
+class Repository(Protocol):
+    """Interface Nga and Ngoc agree on for UI/persistence integration.
+
+    A real adapter must provide snapshot reads and serializable atomic updates.
+    The callback receives the complete normalized store and must either finish
+    successfully or raise, in which case no state is committed.
+    """
+
+    def snapshot(self) -> dict[str, Any]: ...
+
+    def atomic_update(self, operation: Callable[[dict[str, Any]], T]) -> T: ...
+
+    def reset(self) -> None: ...
+
