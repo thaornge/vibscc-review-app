@@ -1,8 +1,26 @@
 # src/repository_base.py
-
+from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Optional
+from typing import Any, Callable, Protocol, TypeVar, List, Dict, Optional
 
+T = TypeVar("T")
+
+# Interface tầng State/Persistence
+class Repository(Protocol):
+    """Interface Nga and Ngoc agree on for UI/persistence integration.
+
+    A real adapter must provide snapshot reads and serializable atomic updates.
+    The callback receives the complete normalized store and must either finish
+    successfully or raise, in which case no state is committed.
+    """
+
+    def snapshot(self) -> dict[str, Any]: ...
+
+    def atomic_update(self, operation: Callable[[dict[str, Any]], T]) -> T: ...
+
+    def reset(self) -> None: ...
+
+# Interface tầng Business Domain Service
 class RepositoryBase(ABC):
 
     @abstractmethod
@@ -54,3 +72,6 @@ class RepositoryBase(ABC):
     def export_task07_bundle(self) -> Dict[str, Any]:
         """Xuất toàn bộ dữ liệu final corpus đạt chuẩn Task 07."""
         pass
+
+
+

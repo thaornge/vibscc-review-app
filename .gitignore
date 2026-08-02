@@ -1,41 +1,10 @@
-# ==========================================
-# 1. BẢO MẬT (TUYỆT ĐỐI KHÔNG PUSH LÊN GIT)
-# ==========================================
 .env
-.env.*
-*.pem
-*.key
-
-# ==========================================
-# 2. PYTHON & VIRTUAL ENVIRONMENT
-# ==========================================
-__pycache__/
-*.py[cod]
-*$py.class
 .venv/
-venv/
-ENV/
-env/
-
-# ==========================================
-# 3. STREAMLIT & TEMPORARY FILES
-# ==========================================
-.streamlit/secrets.toml
-.ds_store
-.DS_Store
-Thumbs.db
-
-# ==========================================
-# 4. TESTING & COVERAGE
-# ==========================================
+__pycache__/
 .pytest_cache/
-.coverage
-htmlcov/
-
-# ==========================================
-# 5. BACKUP & EXPORTS TẠM THỜI
-# ==========================================
+.local/
+*.pyc
+*.log
 backups/
-exports/*.json
-exports/*.csv
-!exports/.gitkeep
+
+
