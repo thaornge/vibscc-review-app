@@ -20,12 +20,31 @@ class SupabaseRepository(RepositoryBase):
         self.client: Client = create_client(url, key)
 
     def get_assigned_cases_for_user(self, annotator_code: str) -> List[Dict[str, Any]]:
-        # Query danh sách bài tập kèm thông tin record và review_route
+        # 1. Query danh sách assignments kèm thông tin record liên quan
         response = self.client.table("assignments") \
-            .select("*, records!inner(*), review_routes!inner(*)") \
+            .select("*, records!inner(*)") \
             .eq("annotator_code", annotator_code) \
             .execute()
-        return response.data
+        
+        assignments = response.data or []
+        if not assignments:
+            return []
+
+        # 2. Lấy danh sách record_id để query thêm thông tin review_routes tương ứng
+        record_ids = [a["record_id"] for a in assignments if "record_id" in a]
+        
+        if record_ids:
+            routes_res = self.client.table("review_routes") \
+                .select("*") \
+                .in_("record_id", record_ids) \
+                .execute()
+            
+            # Máp thông tin review_routes vào từng assignment theo record_id
+            routes_map = {r["record_id"]: r for r in (routes_res.data or [])}
+            for a in assignments:
+                a["review_routes"] = routes_map.get(a["record_id"], {})
+
+        return assignments
 
     def save_draft(self, assignment_id: int, annotation_data: Dict[str, Any]) -> bool:
         data = {**annotation_data, "assignment_id": assignment_id, "is_draft": True}
