@@ -39,7 +39,7 @@ class SupabaseRepository(RepositoryBase):
                 .in_("record_id", record_ids) \
                 .execute()
             
-            # Máp thông tin review_routes vào từng assignment theo record_id
+            # Map thông tin review_routes vào từng assignment theo record_id
             routes_map = {r["record_id"]: r for r in (routes_res.data or [])}
             for a in assignments:
                 a["review_routes"] = routes_map.get(a["record_id"], {})
@@ -107,11 +107,39 @@ class SupabaseRepository(RepositoryBase):
             self.client.table("review_routes").update({"status": new_status}).eq("record_id", record_id).execute()
 
     def get_discussion_cases(self, annotator_code: str) -> List[Dict[str, Any]]:
+        # 1. Query danh sách review_routes có status DISCUSSION_REQUIRED kèm records
         res = self.client.table("review_routes") \
-            .select("*, records(*), human_annotations(*), discussions(*)") \
+            .select("*, records(*)") \
             .eq("status", "DISCUSSION_REQUIRED") \
             .execute()
-        return res.data
+        
+        routes = res.data or []
+        if not routes:
+            return []
+
+        record_ids = [r["record_id"] for r in routes if "record_id" in r]
+
+        if record_ids:
+            # 2. Query human_annotations và discussions theo record_id
+            ann_res = self.client.table("human_annotations").select("*").in_("record_id", record_ids).execute()
+            disc_res = self.client.table("discussions").select("*").in_("record_id", record_ids).execute()
+
+            # Gom nhóm data theo record_id
+            anns_map = {}
+            for ann in (ann_res.data or []):
+                anns_map.setdefault(ann["record_id"], []).append(ann)
+
+            discs_map = {}
+            for disc in (disc_res.data or []):
+                discs_map.setdefault(disc["record_id"], []).append(disc)
+
+            # Map dữ liệu ngược lại vào danh sách routes
+            for r in routes:
+                rec_id = r["record_id"]
+                r["human_annotations"] = anns_map.get(rec_id, [])
+                r["discussions"] = discs_map.get(rec_id, [])
+
+        return routes
 
     def submit_proposal(self, record_id: str, proposer_code: str, proposal: Dict[str, Any]) -> bool:
         data = {
@@ -137,11 +165,39 @@ class SupabaseRepository(RepositoryBase):
         return True
 
     def get_adjudication_cases(self) -> List[Dict[str, Any]]:
+        # 1. Query danh sách review_routes có status ADJUDICATION_REQUIRED kèm records
         res = self.client.table("review_routes") \
-            .select("*, records(*), human_annotations(*), discussions(*)") \
+            .select("*, records(*)") \
             .eq("status", "ADJUDICATION_REQUIRED") \
             .execute()
-        return res.data
+        
+        routes = res.data or []
+        if not routes:
+            return []
+
+        record_ids = [r["record_id"] for r in routes if "record_id" in r]
+
+        if record_ids:
+            # 2. Query human_annotations và discussions theo record_id
+            ann_res = self.client.table("human_annotations").select("*").in_("record_id", record_ids).execute()
+            disc_res = self.client.table("discussions").select("*").in_("record_id", record_ids).execute()
+
+            # Gom nhóm data theo record_id
+            anns_map = {}
+            for ann in (ann_res.data or []):
+                anns_map.setdefault(ann["record_id"], []).append(ann)
+
+            discs_map = {}
+            for disc in (disc_res.data or []):
+                discs_map.setdefault(disc["record_id"], []).append(disc)
+
+            # Máp dữ liệu ngược lại vào danh sách routes
+            for r in routes:
+                rec_id = r["record_id"]
+                r["human_annotations"] = anns_map.get(rec_id, [])
+                r["discussions"] = discs_map.get(rec_id, [])
+
+        return routes
 
     def submit_adjudication(self, record_id: str, admin_code: str, final_data: Dict[str, Any]) -> bool:
         data = {
