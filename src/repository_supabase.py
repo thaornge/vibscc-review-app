@@ -48,6 +48,10 @@ class SupabaseRepository(RepositoryBase):
 
     def save_draft(self, assignment_id: int, annotation_data: Dict[str, Any]) -> bool:
         data = {**annotation_data, "assignment_id": assignment_id, "is_draft": True}
+        
+        # Loại bỏ decision_action nếu schema Supabase chưa có cột này để tránh lỗi PGRST204
+        data.pop("decision_action", None)
+        
         response = self.client.table("human_annotations") \
             .upsert(data, on_conflict="assignment_id") \
             .execute()
@@ -62,6 +66,9 @@ class SupabaseRepository(RepositoryBase):
             "is_draft": False, 
             "submitted_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
         }
+
+        # Loại bỏ decision_action nếu schema Supabase chưa có cột này để tránh lỗi PGRST204
+        data.pop("decision_action", None)
         
         # 1. Lưu nhãn chính thức
         res = self.client.table("human_annotations").upsert(data, on_conflict="assignment_id").execute()
