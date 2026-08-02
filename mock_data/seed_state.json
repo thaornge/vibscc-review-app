@@ -1,0 +1,53 @@
+{
+  "users": [
+    {"user_id": "reviewer_1", "annotator_code": "ANN_01", "role": "REVIEWER", "is_active": true},
+    {"user_id": "reviewer_2", "annotator_code": "ANN_02", "role": "REVIEWER", "is_active": true},
+    {"user_id": "reviewer_3", "annotator_code": "ANN_03", "role": "REVIEWER", "is_active": true},
+    {"user_id": "reviewer_4", "annotator_code": "ANN_04", "role": "REVIEWER", "is_active": true},
+    {"user_id": "admin_phuc", "annotator_code": "ADMIN_PHUC", "role": "ADMIN", "is_active": true}
+  ],
+  "cases": [
+    {
+      "case_id": "CASE_VISIBLE_001", "record_id": "PMOCK001", "text_annotation": "Sản phẩm dùng ổn, giao hàng nhanh.",
+      "guideline_version": "VIBSCC_Guideline_p1.0", "batch_id": "MOCK_DAY3", "route": "SINGLE_VISIBLE_REVIEW", "status": "ASSIGNED",
+      "llm_consensus": {"eligibility": "KEEP", "remove_reason": null, "C_label": "C0", "S_label": "S0", "A_label": "A0", "uncertain": false, "uncertainty_reason": null, "evidence": "Nội dung là nhận xét sản phẩm thông thường."},
+      "assignments": [{"assignment_id": "ASG_V1", "reviewer_id": "reviewer_1", "review_slot": 1, "visibility_mode": "VISIBLE", "status": "ASSIGNED", "draft": null}]
+    },
+    {
+      "case_id": "CASE_BLIND_001", "record_id": "PMOCK002", "text_annotation": "Nội dung synthetic có dấu hiệu công kích cần được đánh giá theo guideline.",
+      "guideline_version": "VIBSCC_Guideline_p1.0", "batch_id": "MOCK_DAY3", "route": "DOUBLE_BLIND", "status": "ASSIGNED",
+      "private_prediction_fixture": {"must_never_appear_in_blind_view": true, "eligibility": "KEEP", "C_label": "C1", "S_label": "S2", "A_label": "A3"},
+      "assignments": [
+        {"assignment_id": "ASG_B1", "reviewer_id": "reviewer_1", "review_slot": 1, "visibility_mode": "BLIND", "status": "ASSIGNED", "draft": null},
+        {"assignment_id": "ASG_B2", "reviewer_id": "reviewer_2", "review_slot": 2, "visibility_mode": "BLIND", "status": "ASSIGNED", "draft": null}
+      ]
+    },
+    {
+      "case_id": "CASE_AUDIT_001", "record_id": "PMOCK003", "text_annotation": "Một câu consensus được chọn ngẫu nhiên để audit blind.",
+      "guideline_version": "VIBSCC_Guideline_p1.0", "batch_id": "MOCK_DAY3", "route": "DOUBLE_BLIND_AUDIT", "status": "ASSIGNED",
+      "audit_flag": true,
+      "assignments": [
+        {"assignment_id": "ASG_A1", "reviewer_id": "reviewer_2", "review_slot": 1, "visibility_mode": "BLIND", "status": "ASSIGNED", "draft": null},
+        {"assignment_id": "ASG_A2", "reviewer_id": "reviewer_3", "review_slot": 2, "visibility_mode": "BLIND", "status": "ASSIGNED", "draft": null}
+      ]
+    },
+    {
+      "case_id": "CASE_TEST_001", "record_id": "TMOCK001", "text_annotation": "Test reserve candidate được review blind và không có prediction.",
+      "guideline_version": "VIBSCC_Guideline_p1.0", "batch_id": "MOCK_TEST_RESERVE", "route": "DOUBLE_BLIND_TEST", "status": "ASSIGNED",
+      "data_role": "TEST_RESERVE_CANDIDATE",
+      "assignments": [
+        {"assignment_id": "ASG_T1", "reviewer_id": "reviewer_3", "review_slot": 1, "visibility_mode": "BLIND", "status": "ASSIGNED", "draft": null},
+        {"assignment_id": "ASG_T2", "reviewer_id": "reviewer_4", "review_slot": 2, "visibility_mode": "BLIND", "status": "ASSIGNED", "draft": null}
+      ]
+    },
+    {
+      "case_id": "CASE_ADJ_001", "record_id": "PMOCK004", "text_annotation": "Case mock đã qua discussion nhưng hai reviewer vẫn không thống nhất.",
+      "guideline_version": "VIBSCC_Guideline_p1.0", "batch_id": "MOCK_DAY3", "route": "DOUBLE_BLIND", "status": "ADJUDICATION_REQUIRED",
+      "assignments": [
+        {"assignment_id": "ASG_D1", "reviewer_id": "reviewer_1", "review_slot": 1, "visibility_mode": "BLIND", "status": "SUBMITTED", "annotation": {"eligibility": "KEEP", "C_label": "C1", "S_label": "S2", "A_label": "A3", "uncertain": false}, "decision_action": "BLIND_LABEL"},
+        {"assignment_id": "ASG_D2", "reviewer_id": "reviewer_2", "review_slot": 2, "visibility_mode": "BLIND", "status": "SUBMITTED", "annotation": {"eligibility": "KEEP", "C_label": "C1", "S_label": "S4", "A_label": "A3", "uncertain": false}, "decision_action": "BLIND_LABEL"}
+      ],
+      "discussion": {"status": "ESCALATED", "proposed_by": "reviewer_1", "labels": {"eligibility": "KEEP", "C_label": "C1", "S_label": "S2", "A_label": "A3", "uncertain": false}, "rationale": "Reviewer 1 proposal", "responded_by": "reviewer_2", "response_rationale": "Không thống nhất S label"}
+    }
+  ]
+}

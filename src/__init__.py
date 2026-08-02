@@ -1,0 +1,1 @@
+"""ViBSCC human verification application."""
