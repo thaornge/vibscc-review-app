@@ -1,17 +1,15 @@
-# Synthetic mock coverage
+# Mock Data
 
-Nguồn fixture chính là `src/mock_seed.py`; app tự import fixture vào `.local/mock_state.json` ở lần chạy đầu.
+This directory contains CSV fixtures used by backend import/export scripts.
 
-| Record | Route | Scenario |
-|---|---|---|
-| V001 | SINGLE_VISIBLE_REVIEW | consensus, Accept |
-| V002 | SINGLE_VISIBLE_REVIEW | consensus, Edit |
-| B001 | DOUBLE_BLIND | human disagreement, discussion demo |
-| B002 | DOUBLE_BLIND | LLM uncertain |
-| A001 | DOUBLE_BLIND_AUDIT | random audit |
-| I001 | DOUBLE_BLIND | invalid prediction |
-| T001 | DOUBLE_BLIND_TEST | no LLM prediction, normal review |
-| T002 | DOUBLE_BLIND_TEST | no LLM prediction, adjudication demo |
+The cloud database has already been loaded by the backend/data owner. UI work should not rerun scripts in `scripts/` unless explicitly asked.
 
-Fixture chỉ chứa dữ liệu synthetic, không chứa raw/private mapping hay secret.
+Important files:
 
+- `mock_users.csv`
+- `llm_input_pool_mock.csv`
+- `llm_predictions_long_mock.csv`
+- `review_routes_mock.csv`
+- `test_reserve_candidates_mock.csv`
+
+Legacy JSON mock files may still exist for tests or old local workflows, but the active Streamlit UI is wired to Supabase.
