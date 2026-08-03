@@ -46,14 +46,21 @@ class SupabaseRepository(RepositoryBase):
 
         return assignments
 
+    def _clean_annotation_payload(self, annotation_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Chỉ giữ lại các cột thực sự tồn tại trong schema bảng human_annotations."""
+        valid_columns = {
+            "assignment_id", "record_id", "annotator_code", 
+            "eligibility", "c_label", "s_label", "a_label", 
+            "remove_reason", "uncertain", "is_draft", "submitted_at"
+        }
+        return {k: v for k, v in annotation_data.items() if k in valid_columns}
+    
     def save_draft(self, assignment_id: int, annotation_data: Dict[str, Any]) -> bool:
         data = {**annotation_data, "assignment_id": assignment_id, "is_draft": True}
-        
-        # Loại bỏ decision_action nếu schema Supabase chưa có cột này để tránh lỗi PGRST204
-        data.pop("decision_action", None)
+        clean_data = self._clean_annotation_payload(data)
         
         response = self.client.table("human_annotations") \
-            .upsert(data, on_conflict="assignment_id") \
+            .upsert(clean_data, on_conflict="assignment_id") \
             .execute()
         
         self.client.table("assignments").update({"status": "DRAFT"}).eq("assignment_id", assignment_id).execute()
@@ -67,17 +74,15 @@ class SupabaseRepository(RepositoryBase):
             "submitted_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
         }
 
-        # Loại bỏ decision_action nếu schema Supabase chưa có cột này để tránh lỗi PGRST204
-        data.pop("decision_action", None)
-        
+        clean_data = self._clean_annotation_payload(data)
+
         # 1. Lưu nhãn chính thức
-        res = self.client.table("human_annotations").upsert(data, on_conflict="assignment_id").execute()
+        res = self.client.table("human_annotations").upsert(clean_data, on_conflict="assignment_id").execute()
         
         # 2. Cập nhật trạng thái assignment thành SUBMITTED
         self.client.table("assignments").update({"status": "SUBMITTED"}).eq("assignment_id", assignment_id).execute()
         
         # 3. Kích hoạt kiểm tra xem cả 2 humans đã submit chưa để đổi status của case
-        # (Xử lý đối soát 2 human agreement / disagreement)
         self._reconcile_case_status(annotation_data.get("record_id"))
         
         return res.data[0] if res.data else {}
@@ -90,7 +95,7 @@ class SupabaseRepository(RepositoryBase):
             .eq("is_draft", False) \
             .execute()
         
-        annotations = ann_res.data
+        annotations = ann_res.data or []
         route_res = self.client.table("review_routes").select("*").eq("record_id", record_id).execute()
         if not route_res.data:
             return
@@ -104,10 +109,10 @@ class SupabaseRepository(RepositoryBase):
             else:
                 ann1, ann2 = annotations[0], annotations[1]
                 match = (
-                    ann1["eligibility"] == ann2["eligibility"] and
-                    ann1["c_label"] == ann2["c_label"] and
-                    ann1["s_label"] == ann2["s_label"] and
-                    ann1["a_label"] == ann2["a_label"]
+                    ann1.get("eligibility") == ann2.get("eligibility") and
+                    ann1.get("c_label") == ann2.get("c_label") and
+                    ann1.get("s_label") == ann2.get("s_label") and
+                    ann1.get("a_label") == ann2.get("a_label")
                 )
                 new_status = "RESOLVED_HUMAN_AGREEMENT" if match else "DISCUSSION_REQUIRED"
 
@@ -148,6 +153,14 @@ class SupabaseRepository(RepositoryBase):
 
         return routes
 
+    def _clean_discussion_payload(self, proposal: Dict[str, Any]) -> Dict[str, Any]:
+        """Chỉ giữ lại các cột thuộc bảng discussions."""
+        valid_columns = {
+            "record_id", "proposer_code", "proposed_eligibility", 
+            "proposed_c", "proposed_s", "proposed_a", "reason", "status"
+        }
+        return {k: v for k, v in proposal.items() if k in valid_columns}
+
     def submit_proposal(self, record_id: str, proposer_code: str, proposal: Dict[str, Any]) -> bool:
         data = {
             "record_id": record_id,
@@ -155,19 +168,25 @@ class SupabaseRepository(RepositoryBase):
             **proposal,
             "status": "OPEN"
         }
-        res = self.client.table("discussions").insert(data).execute()
+        clean_data = self._clean_discussion_payload(data)
+        res = self.client.table("discussions").insert(clean_data).execute()
         return bool(res.data)
 
     def resolve_discussion(self, discussion_id: int, responder_code: str, action: str) -> bool:
+        disc_res = self.client.table("discussions").select("*").eq("discussion_id", discussion_id).execute()
+        if not disc_res.data:
+            return False
+        
+        disc = disc_res.data[0]
+        now_str = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
         if action == "ACCEPT":
             # Chấp nhận đề xuất -> Case chốt
-            disc = self.client.table("discussions").select("*").eq("discussion_id", discussion_id).execute().data[0]
-            self.client.table("discussions").update({"status": "ACCEPTED", "resolved_at": datetime.datetime.now().isoformat()}).eq("discussion_id", discussion_id).execute()
+            self.client.table("discussions").update({"status": "ACCEPTED", "resolved_at": now_str}).eq("discussion_id", discussion_id).execute()
             self.client.table("review_routes").update({"status": "RESOLVED_HUMAN_AGREEMENT"}).eq("record_id", disc["record_id"]).execute()
         else:
             # Bác bỏ đề xuất -> Leo thang lên Adjudication
-            disc = self.client.table("discussions").select("*").eq("discussion_id", discussion_id).execute().data[0]
-            self.client.table("discussions").update({"status": "REJECTED", "resolved_at": datetime.datetime.now().isoformat()}).eq("discussion_id", discussion_id).execute()
+            self.client.table("discussions").update({"status": "REJECTED", "resolved_at": now_str}).eq("discussion_id", discussion_id).execute()
             self.client.table("review_routes").update({"status": "ADJUDICATION_REQUIRED"}).eq("record_id", disc["record_id"]).execute()
         return True
 
@@ -198,7 +217,7 @@ class SupabaseRepository(RepositoryBase):
             for disc in (disc_res.data or []):
                 discs_map.setdefault(disc["record_id"], []).append(disc)
 
-            # Máp dữ liệu ngược lại vào danh sách routes
+            # Map dữ liệu ngược lại vào danh sách routes
             for r in routes:
                 rec_id = r["record_id"]
                 r["human_annotations"] = anns_map.get(rec_id, [])
@@ -206,15 +225,24 @@ class SupabaseRepository(RepositoryBase):
 
         return routes
 
+    def _clean_adjudication_payload(self, final_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Chỉ giữ lại các cột thuộc bảng adjudications."""
+        valid_columns = {
+            "record_id", "adjudicator_code", "final_eligibility", 
+            "final_c", "final_s", "final_a", "notes"
+        }
+        return {k: v for k, v in final_data.items() if k in valid_columns}
+
     def submit_adjudication(self, record_id: str, admin_code: str, final_data: Dict[str, Any]) -> bool:
         data = {
             "record_id": record_id,
             "adjudicator_code": admin_code,
             **final_data
         }
-        self.client.table("adjudications").insert(data).execute()
+        clean_data = self._clean_adjudication_payload(data)
+        res = self.client.table("adjudications").insert(clean_data).execute()
         self.client.table("review_routes").update({"status": "ADJUDICATED"}).eq("record_id", record_id).execute()
-        return True
+        return bool(res.data)
 
     def import_task06_bundle(self, records: List[Dict], predictions: List[Dict], routes: List[Dict]) -> Dict[str, int]:
         r_res = self.client.table("records").upsert(records, on_conflict="record_id").execute()
@@ -228,4 +256,4 @@ class SupabaseRepository(RepositoryBase):
 
     def export_task07_bundle(self) -> Dict[str, Any]:
         records = self.client.table("records").select("*, review_routes(*), human_annotations(*), adjudications(*)").execute()
-        return {"export_timestamp": datetime.datetime.now().isoformat(), "data": records.data}
+        return {"export_timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(), "data": records.data}
