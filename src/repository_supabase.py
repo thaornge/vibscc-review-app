@@ -248,12 +248,18 @@ class SupabaseRepository(RepositoryBase):
         return routes
 
     def _clean_adjudication_payload(self, final_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Chỉ giữ lại các cột thuộc bảng adjudications."""
+        """Chỉ giữ lại các cột thuộc bảng adjudications và map rationale/notes sang reasoning."""
+        payload = {**final_data}
+        
+        # Tự động map rationale hoặc notes sang reasoning nếu DB yêu cầu cột reasoning (NOT NULL)
+        reasoning_val = payload.get("reasoning") or payload.get("rationale") or payload.get("notes") or ""
+        payload["reasoning"] = reasoning_val
+        
         valid_columns = {
             "record_id", "adjudicator_code", "final_eligibility", 
-            "final_c", "final_s", "final_a", "notes"
+            "final_c", "final_s", "final_a", "reasoning", "notes"
         }
-        return {k: v for k, v in final_data.items() if k in valid_columns}
+        return {k: v for k, v in payload.items() if k in valid_columns}
 
     def submit_adjudication(self, record_id: str, admin_code: str, final_data: Dict[str, Any]) -> bool:
         data = {
