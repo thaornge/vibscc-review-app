@@ -58,7 +58,10 @@ class SupabaseRepository(RepositoryBase):
     def save_draft(self, assignment_id: int, annotation_data: Dict[str, Any]) -> bool:
         data = {**annotation_data, "assignment_id": assignment_id, "is_draft": True}
         clean_data = self._clean_annotation_payload(data)
-        
+
+        clean_data.pop("guideline_version", None)
+        clean_data.pop("decision_action", None)
+
         response = self.client.table("human_annotations") \
             .upsert(clean_data, on_conflict="assignment_id") \
             .execute()
@@ -75,6 +78,10 @@ class SupabaseRepository(RepositoryBase):
         }
 
         clean_data = self._clean_annotation_payload(data)
+
+        # Ép xoá cứng các field gây lỗi PGRST204
+        clean_data.pop("guideline_version", None)
+        clean_data.pop("decision_action", None)
 
         # 1. Lưu nhãn chính thức
         res = self.client.table("human_annotations").upsert(clean_data, on_conflict="assignment_id").execute()
