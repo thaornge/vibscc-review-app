@@ -58,13 +58,21 @@ class SupabaseRepository(RepositoryBase):
     def save_draft(self, assignment_id: int, annotation_data: Dict[str, Any]) -> bool:
         data = {**annotation_data, "assignment_id": assignment_id, "is_draft": True}
         clean_data = self._clean_annotation_payload(data)
-
-        clean_data.pop("guideline_version", None)
-        clean_data.pop("decision_action", None)
-
-        response = self.client.table("human_annotations") \
-            .upsert(clean_data, on_conflict="assignment_id") \
-            .execute()
+        
+        # 1. Kiểm tra xem đã có bản ghi draft/annotation nào cho assignment_id này chưa
+        existing = self.client.table("human_annotations").select("annotation_id").eq("assignment_id", assignment_id).execute()
+        
+        if existing.data:
+            # Nếu đã tồn tại -> Update
+            response = self.client.table("human_annotations") \
+                .update(clean_data) \
+                .eq("assignment_id", assignment_id) \
+                .execute()
+        else:
+            # Nếu chưa có -> Insert
+            response = self.client.table("human_annotations") \
+                .insert(clean_data) \
+                .execute()
         
         self.client.table("assignments").update({"status": "DRAFT"}).eq("assignment_id", assignment_id).execute()
         return bool(response.data)
@@ -76,15 +84,22 @@ class SupabaseRepository(RepositoryBase):
             "is_draft": False, 
             "submitted_at": datetime.datetime.now(datetime.timezone.utc).isoformat()
         }
-
         clean_data = self._clean_annotation_payload(data)
 
-        # Ép xoá cứng các field gây lỗi PGRST204
-        clean_data.pop("guideline_version", None)
-        clean_data.pop("decision_action", None)
-
-        # 1. Lưu nhãn chính thức
-        res = self.client.table("human_annotations").upsert(clean_data, on_conflict="assignment_id").execute()
+        # 1. Kiểm tra xem đã có bản ghi cho assignment_id này chưa
+        existing = self.client.table("human_annotations").select("annotation_id").eq("assignment_id", assignment_id).execute()
+        
+        if existing.data:
+            # Nếu đã tồn tại -> Update
+            res = self.client.table("human_annotations") \
+                .update(clean_data) \
+                .eq("assignment_id", assignment_id) \
+                .execute()
+        else:
+            # Nếu chưa có -> Insert
+            res = self.client.table("human_annotations") \
+                .insert(clean_data) \
+                .execute()
         
         # 2. Cập nhật trạng thái assignment thành SUBMITTED
         self.client.table("assignments").update({"status": "SUBMITTED"}).eq("assignment_id", assignment_id).execute()
