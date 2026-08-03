@@ -6,6 +6,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from src.repository_base import RepositoryBase
+from src.validators import validate_annotation
 from typing import List, Dict, Any, Optional
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -51,9 +52,27 @@ class SupabaseRepository(RepositoryBase):
         valid_columns = {
             "assignment_id", "record_id", "annotator_code", 
             "eligibility", "c_label", "s_label", "a_label", 
-            "remove_reason", "uncertain", "is_draft", "submitted_at"
+            "remove_reason", "uncertain", "uncertainty_reason",
+            "evidence", "rule_id", "note", "guideline_version",
+            "is_draft", "submitted_at"
         }
         return {k: v for k, v in annotation_data.items() if k in valid_columns}
+
+    def _annotation_for_validation(self, annotation_data: Dict[str, Any], decision_action: str = "BLIND_LABEL") -> Dict[str, Any]:
+        return {
+            "decision_action": annotation_data.get("decision_action") or decision_action,
+            "eligibility": annotation_data.get("eligibility"),
+            "remove_reason": annotation_data.get("remove_reason") or "",
+            "C_label": annotation_data.get("C_label") or annotation_data.get("c_label"),
+            "S_label": annotation_data.get("S_label") or annotation_data.get("s_label"),
+            "A_label": annotation_data.get("A_label") or annotation_data.get("a_label"),
+            "uncertain": annotation_data.get("uncertain") in {True, "YES", "yes", "true", "TRUE"},
+            "uncertainty_reason": annotation_data.get("uncertainty_reason") or "",
+            "evidence": annotation_data.get("evidence") or "",
+            "rule_id": annotation_data.get("rule_id") or "",
+            "note": annotation_data.get("note") or "",
+            "guideline_version": annotation_data.get("guideline_version") or "",
+        }
     
     def save_draft(self, assignment_id: int, annotation_data: Dict[str, Any]) -> bool:
         data = {**annotation_data, "assignment_id": assignment_id, "is_draft": True}
@@ -78,6 +97,7 @@ class SupabaseRepository(RepositoryBase):
         return bool(response.data)
 
     def submit_annotation(self, assignment_id: int, annotation_data: Dict[str, Any]) -> Dict[str, Any]:
+        validate_annotation(self._annotation_for_validation(annotation_data))
         data = {
             **annotation_data, 
             "assignment_id": assignment_id, 
@@ -177,13 +197,20 @@ class SupabaseRepository(RepositoryBase):
 
     def _clean_discussion_payload(self, proposal: Dict[str, Any]) -> Dict[str, Any]:
         """Chỉ giữ lại các cột thuộc bảng discussions."""
+        payload = {**proposal}
+        payload["proposed_eligibility"] = payload.get("proposed_eligibility") or payload.get("eligibility")
+        payload["proposed_c"] = payload.get("proposed_c") or payload.get("c_label")
+        payload["proposed_s"] = payload.get("proposed_s") or payload.get("s_label")
+        payload["proposed_a"] = payload.get("proposed_a") or payload.get("a_label")
+        payload["reason"] = payload.get("reason") or payload.get("rationale")
         valid_columns = {
             "record_id", "proposer_code", "proposed_eligibility", 
             "proposed_c", "proposed_s", "proposed_a", "reason", "status"
         }
-        return {k: v for k, v in proposal.items() if k in valid_columns}
+        return {k: v for k, v in payload.items() if k in valid_columns}
 
     def submit_proposal(self, record_id: str, proposer_code: str, proposal: Dict[str, Any]) -> bool:
+        validate_annotation(self._annotation_for_validation(proposal, "BLIND_LABEL"))
         data = {
             "record_id": record_id,
             "proposer_code": proposer_code,
@@ -262,6 +289,20 @@ class SupabaseRepository(RepositoryBase):
         return {k: v for k, v in payload.items() if k in valid_columns}
 
     def submit_adjudication(self, record_id: str, admin_code: str, final_data: Dict[str, Any]) -> bool:
+        validate_annotation({
+            "decision_action": "BLIND_LABEL",
+            "eligibility": final_data.get("eligibility") or final_data.get("final_eligibility"),
+            "remove_reason": final_data.get("remove_reason") or "",
+            "C_label": final_data.get("C_label") or final_data.get("final_c"),
+            "S_label": final_data.get("S_label") or final_data.get("final_s"),
+            "A_label": final_data.get("A_label") or final_data.get("final_a"),
+            "uncertain": final_data.get("uncertain") in {True, "YES", "yes", "true", "TRUE"},
+            "uncertainty_reason": final_data.get("uncertainty_reason") or "",
+            "evidence": final_data.get("evidence") or "",
+            "rule_id": final_data.get("rule_id") or "",
+            "note": final_data.get("note") or "",
+            "guideline_version": final_data.get("guideline_version") or "VIBSCC_Guideline_p1.0",
+        })
         data = {
             "record_id": record_id,
             "adjudicator_code": admin_code,
@@ -274,13 +315,29 @@ class SupabaseRepository(RepositoryBase):
 
     def import_task06_bundle(self, records: List[Dict], predictions: List[Dict], routes: List[Dict]) -> Dict[str, int]:
         r_res = self.client.table("records").upsert(records, on_conflict="record_id").execute()
-        p_res = self.client.table("llm_predictions").insert(predictions).execute()
+        p_res = self._replace_predictions_for_import(predictions)
         rt_res = self.client.table("review_routes").upsert(routes, on_conflict="record_id").execute()
         return {
             "records": len(r_res.data or []),
             "predictions": len(p_res.data or []),
             "routes": len(rt_res.data or [])
         }
+
+    def _replace_predictions_for_import(self, predictions: List[Dict]) -> Any:
+        if not predictions:
+            class EmptyResponse:
+                data: list[Any] = []
+            return EmptyResponse()
+
+        record_ids = sorted({row["record_id"] for row in predictions if row.get("record_id")})
+        run_ids = sorted({row["run_id"] for row in predictions if row.get("run_id")})
+        query = self.client.table("llm_predictions").delete()
+        if record_ids:
+            query = query.in_("record_id", record_ids)
+        if run_ids:
+            query = query.in_("run_id", run_ids)
+        query.execute()
+        return self.client.table("llm_predictions").insert(predictions).execute()
 
     def export_task07_bundle(self) -> Dict[str, Any]:
         records = self.client.table("records").select("*, review_routes(*), human_annotations(*), adjudications(*)").execute()

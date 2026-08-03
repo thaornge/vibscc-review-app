@@ -1,6 +1,7 @@
 import streamlit as st
 
-from src.app_context import current_user, repository
+from src.auth import require_login
+from src.app_context import repository
 from src.ui import annotation_form, labels_text
 from src.ui_supabase import first_relation, normalize_initial, to_supabase_annotation
 from src.validators import validate_annotation
@@ -8,7 +9,7 @@ from src.validators import validate_annotation
 
 st.set_page_config(page_title="Adjudication", page_icon="AD", layout="wide")
 repo = repository()
-user = current_user(repo)
+user = require_login(repo)
 
 st.title("Adjudication")
 if user["role"] != "ADMIN":
@@ -34,7 +35,7 @@ st.info(record.get("text_annotation", ""))
 for annotation in annotations:
     st.write(f"**{annotation.get('annotator_code', '')}** - {labels_text(normalize_initial(annotation))}")
 if latest_discussion:
-    st.caption(latest_discussion.get("rationale") or "")
+    st.caption(latest_discussion.get("rationale") or latest_discussion.get("reason") or "")
 
 labels = annotation_form(f"adjudication_{item['record_id']}", normalize_initial(latest_discussion or (annotations[0] if annotations else None)))
 rationale = st.text_area("Rationale *", height=68)

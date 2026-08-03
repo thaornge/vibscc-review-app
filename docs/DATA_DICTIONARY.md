@@ -6,13 +6,13 @@ This document reflects the current Supabase-backed UI contract.
 
 | Table | Purpose | UI fields used |
 |---|---|---|
-| `users` | Sidebar account selector | `annotator_code`, `role`, `active` or `is_active` |
+| `users` | Login account list and role lookup | `annotator_code`, `role`, `active` or `is_active` |
 | `assignments` | Reviewer work queue | `assignment_id`, `record_id`, `annotator_code`, `status`, `slot_index` |
 | `records` | Review text and metadata | `record_id`, `text_annotation`, `guideline_version`, `batch_id` |
 | `review_routes` | Route/status per record | `record_id`, `review_route`, `status`, `required_humans` |
-| `human_annotations` | Draft/submitted human labels | `assignment_id`, `record_id`, `annotator_code`, labels, notes |
-| `discussions` | Discussion proposals | `discussion_id`, `record_id`, `proposer_code`, proposal labels, `status`, `rationale` |
-| `adjudications` | Admin final labels | `record_id`, `adjudicator_code`, final labels, `rationale` |
+| `human_annotations` | Draft/submitted human labels | `assignment_id`, `record_id`, `annotator_code`, `eligibility`, `remove_reason`, `c_label`, `s_label`, `a_label`, `uncertain`, `uncertainty_reason`, `evidence`, `rule_id`, `note`, `guideline_version`, `is_draft`, `submitted_at` |
+| `discussions` | Discussion proposals | `discussion_id`, `record_id`, `proposer_code`, `proposed_eligibility`, `proposed_c`, `proposed_s`, `proposed_a`, `status`, `reason` |
+| `adjudications` | Admin final labels | `record_id`, `adjudicator_code`, `final_eligibility`, `final_c`, `final_s`, `final_a`, `reasoning`, `notes` |
 
 ## Label Payload
 
@@ -42,6 +42,18 @@ uncertain -> YES/NO
 ```
 
 For `eligibility=REMOVE`, the UI sends `c_label`, `s_label`, and `a_label` as `None`.
+
+Discussion proposals are additionally mapped by `SupabaseRepository.submit_proposal`:
+
+```text
+eligibility -> proposed_eligibility
+c_label -> proposed_c
+s_label -> proposed_s
+a_label -> proposed_a
+rationale -> reason
+```
+
+Adjudication rationale is stored as `reasoning`.
 
 ## UI Validation Rules
 

@@ -1,6 +1,7 @@
 import streamlit as st
 
-from src.app_context import current_user, repository
+from src.auth import require_login
+from src.app_context import repository
 from src.ui import annotation_form, labels_text
 from src.ui_supabase import first_relation, normalize_initial, to_supabase_annotation
 from src.validators import validate_annotation
@@ -8,7 +9,7 @@ from src.validators import validate_annotation
 
 st.set_page_config(page_title="Discussion", page_icon="DS", layout="wide")
 repo = repository()
-user = current_user(repo)
+user = require_login(repo)
 
 st.title("Discussion")
 if user["role"] != "REVIEWER":
@@ -52,7 +53,7 @@ if not open_discussion:
 else:
     st.caption("Proposal dang cho")
     st.info(labels_text(normalize_initial(open_discussion)))
-    st.write(open_discussion.get("rationale") or "")
+    st.write(open_discussion.get("rationale") or open_discussion.get("reason") or "")
     col1, col2 = st.columns(2)
     with col1:
         if st.button("Confirm", type="primary", use_container_width=True):

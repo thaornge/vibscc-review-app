@@ -1,6 +1,7 @@
 import streamlit as st
 
-from src.app_context import current_user, repository
+from src.auth import require_login
+from src.app_context import repository
 from src.ui import annotation_form, labels_text
 from src.ui_supabase import first_relation, normalize_initial, normalize_prediction, to_supabase_annotation
 from src.validators import validate_annotation
@@ -8,7 +9,7 @@ from src.validators import validate_annotation
 
 st.set_page_config(page_title="My Review", page_icon="MR", layout="wide")
 repo = repository()
-user = current_user(repo)
+user = require_login(repo)
 
 st.title("My Review")
 if user["role"] != "REVIEWER":

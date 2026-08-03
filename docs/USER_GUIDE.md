@@ -2,12 +2,23 @@
 
 ## Start
 
+Create `.env` with Supabase credentials and the app password:
+
+```text
+SUPABASE_URL=...
+SUPABASE_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+APP_PASSWORD_ANN_01=...
+APP_PASSWORD_ANN_02=...
+APP_PASSWORD_ADMIN_PHUC=...
+```
+
 ```powershell
 python -m pip install -r requirements.txt
 python -m streamlit run app.py
 ```
 
-Select an account in the sidebar. Reviewer accounts open review and discussion workflows. Admin accounts open adjudication.
+Sign in with an account and its password. Reviewer accounts open review and discussion workflows. Admin accounts open adjudication.
 
 ## My Review
 
@@ -27,7 +38,7 @@ For `REMOVE`, choose one remove reason. If the reason is `OTHER_REMOVE`, fill `N
 3. Review both submitted annotations.
 4. Create a proposal, or confirm/reject an existing proposal.
 
-Rejecting a proposal sends the record to adjudication.
+Proposal labels and rationale are saved to the discussion record. Rejecting a proposal sends the record to adjudication.
 
 ## Adjudication
 

@@ -23,6 +23,19 @@ def clean_dataframe(df: pd.DataFrame) -> list:
     df_clean.columns = [col.lower() for col in df_clean.columns]
     return df_clean.where(pd.notnull(df_clean), None).to_dict(orient="records")
 
+def replace_predictions(client, predictions_data: list):
+    if not predictions_data:
+        return
+    record_ids = sorted({row["record_id"] for row in predictions_data if row.get("record_id")})
+    run_ids = sorted({row["run_id"] for row in predictions_data if row.get("run_id")})
+    query = client.table("llm_predictions").delete()
+    if record_ids:
+        query = query.in_("record_id", record_ids)
+    if run_ids:
+        query = query.in_("run_id", run_ids)
+    query.execute()
+    client.table("llm_predictions").insert(predictions_data).execute()
+
 def import_task06_data():
     if not SUPABASE_URL or not SUPABASE_KEY:
         print("Lỗi: Chưa cấu hình biến môi trường SUPABASE_URL hoặc SUPABASE_SERVICE_ROLE_KEY.")
@@ -44,7 +57,7 @@ def import_task06_data():
     print("--- 3. Import LLM Predictions ---")
     preds_df = pd.read_csv(MOCK_DATA_DIR / "llm_predictions_long_mock.csv")
     preds_data = clean_dataframe(preds_df)
-    client.table("llm_predictions").insert(preds_data).execute()
+    replace_predictions(client, preds_data)
 
     print("--- 4. Import Review Routes ---")
     routes_df = pd.read_csv(MOCK_DATA_DIR / "review_routes_mock.csv")

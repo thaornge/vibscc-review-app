@@ -13,11 +13,11 @@ def first_relation(row: dict[str, Any], key: str) -> dict[str, Any]:
 def normalize_initial(row: dict[str, Any] | None) -> dict[str, Any]:
     row = row or {}
     return {
-        "eligibility": row.get("eligibility") or "KEEP",
+        "eligibility": row.get("eligibility") or row.get("proposed_eligibility") or "KEEP",
         "remove_reason": row.get("remove_reason") or "",
-        "C_label": row.get("C_label") or row.get("c_label") or "C0",
-        "S_label": row.get("S_label") or row.get("s_label") or "S0",
-        "A_label": row.get("A_label") or row.get("a_label") or "A0",
+        "C_label": row.get("C_label") or row.get("c_label") or row.get("proposed_c") or "C0",
+        "S_label": row.get("S_label") or row.get("s_label") or row.get("proposed_s") or "S0",
+        "A_label": row.get("A_label") or row.get("a_label") or row.get("proposed_a") or "A0",
         "uncertain": row.get("uncertain") in {True, "YES", "yes", "true", "TRUE"},
         "uncertainty_reason": row.get("uncertainty_reason") or "",
         "evidence": row.get("evidence") or "",

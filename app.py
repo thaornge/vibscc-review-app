@@ -1,6 +1,7 @@
 import streamlit as st
 
-from src.app_context import current_user, repository
+from src.auth import require_login
+from src.app_context import repository
 
 
 st.set_page_config(page_title="ViBSCC Verify", page_icon="OK", layout="wide")
@@ -8,13 +9,12 @@ st.title("ViBSCC Human Verification")
 
 try:
     repo = repository()
-    user = current_user(repo)
 except Exception as exc:
     st.error(str(exc))
     st.info("Hay dien SUPABASE_URL, SUPABASE_KEY va SUPABASE_SERVICE_ROLE_KEY trong file .env.")
     st.stop()
 
-st.caption(f"Signed in as {user['annotator_code']} - {user['role']}")
+user = require_login(repo)
 
 col1, col2, col3 = st.columns(3)
 with col1:

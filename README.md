@@ -12,6 +12,9 @@ Create `.env` in the project root:
 SUPABASE_URL=...
 SUPABASE_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
+APP_PASSWORD_ANN_01=...
+APP_PASSWORD_ANN_02=...
+APP_PASSWORD_ADMIN_PHUC=...
 ```
 
 Install and run:
@@ -21,7 +24,7 @@ python -m pip install -r requirements.txt
 python -m streamlit run app.py
 ```
 
-Use the Streamlit sidebar account selector, then open the pages:
+Sign in with an account password, then open the pages:
 
 - `My Review`
 - `Discussion`
@@ -37,9 +40,13 @@ Use the Streamlit sidebar account selector, then open the pages:
 
 The `scripts/` directory contains import/export utilities that have already been run for cloud data. Do not rerun them unless the backend/data owner asks for it.
 
+## Deployment Notes
+
+The app is protected by per-account passwords. Configure one `APP_PASSWORD_<ANNOTATOR_CODE>` environment variable or Streamlit secret for each account that should be able to sign in. For example, `APP_PASSWORD_ANN_01` protects the `ANN_01` account.
+
 ## Verification
 
 ```powershell
-python -m py_compile app.py src\app_context.py src\ui_supabase.py src\repository_supabase.py pages\01_My_Review.py pages\02_Discussion.py pages\03_Adjudication.py
+python -m py_compile app.py src\auth.py src\app_context.py src\ui_supabase.py src\repository_supabase.py pages\01_My_Review.py pages\02_Discussion.py pages\03_Adjudication.py
 python -m pytest tests\test_validators.py
 ```
