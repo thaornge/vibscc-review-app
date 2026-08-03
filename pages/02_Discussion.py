@@ -3,9 +3,10 @@ import streamlit as st
 from src.app_context import current_user, repository
 from src.ui import annotation_form, labels_text
 from src.ui_supabase import first_relation, normalize_initial, to_supabase_annotation
+from src.validators import validate_annotation
 
 
-st.set_page_config(page_title="Discussion", page_icon="DS")
+st.set_page_config(page_title="Discussion", page_icon="DS", layout="wide")
 repo = repository()
 user = current_user(repo)
 
@@ -42,6 +43,7 @@ if not open_discussion:
     payload["rationale"] = rationale
     if st.button("Gui proposal", type="primary"):
         try:
+            validate_annotation({**labels, "decision_action": "BLIND_LABEL"})
             repo.submit_proposal(item["record_id"], user["annotator_code"], payload)
             st.success("Da gui proposal.")
             st.rerun()

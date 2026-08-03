@@ -27,6 +27,20 @@ def normalize_initial(row: dict[str, Any] | None) -> dict[str, Any]:
     }
 
 
+def normalize_prediction(row: dict[str, Any] | None) -> dict[str, Any]:
+    row = row or {}
+    return normalize_initial({
+        "eligibility": row.get("predicted_eligibility"),
+        "c_label": row.get("predicted_c"),
+        "s_label": row.get("predicted_s"),
+        "a_label": row.get("predicted_a"),
+        "uncertain": row.get("uncertain"),
+        "uncertainty_reason": row.get("uncertainty_reason"),
+        "evidence": row.get("evidence"),
+        "guideline_version": row.get("guideline_version"),
+    })
+
+
 def to_supabase_annotation(labels: dict[str, Any], *, record_id: str, annotator_code: str) -> dict[str, Any]:
     eligibility = labels.get("eligibility")
     return {
